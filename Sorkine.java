@@ -53,6 +53,7 @@ public class Sorkine extends SurfaceModeling {
 		double temp=0;
 		int count=0;
 		
+		//PrintWriter pWriter = new PrintWriter(new FileWriter("Energy_graph.txt", true));
 		while (count<=15){
 			//Step 1 : compute the rotations
 			this.rotations = new HashMap<Vertex<Point_3>,Rotation_3>();
@@ -71,6 +72,8 @@ public class Sorkine extends SurfaceModeling {
 			System.out.println("At iteration "+(count)+", energy is "+energy);
 			System.out.println("At iteration "+(count)+", diff is "+diff);
 			
+			//pWriter.println( count +" "+ energy);
+
 			//Step 4 : move points
 			this.movePts(pts);
 			
@@ -80,6 +83,7 @@ public class Sorkine extends SurfaceModeling {
 			}*/
 			count++;
 		}
+		//pWriter.close() ;
 		System.out.println("END : "+(count)+" iterations, energy is "+energy);
 		
 	}
