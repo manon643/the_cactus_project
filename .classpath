@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="src" path=""/>
+	<classpathentry kind="lib" path="/Users/coraliedavid/eclipse-workspace/LIB/Jama-1.0.2.jar"/>
+	<classpathentry kind="lib" path="/Users/coraliedavid/eclipse-workspace/LIB/Jcg.jar"/>
+	<classpathentry kind="lib" path="/Users/coraliedavid/eclipse-workspace/LIB/TC.jar"/>
+	<classpathentry kind="lib" path="/Users/coraliedavid/eclipse-workspace/LIB/core.jar"/>
+	<classpathentry kind="output" path=""/>
+</classpath>
