@@ -21,6 +21,7 @@ public class MeshViewer extends PApplet {
 	int renderModes=3; // number of rendering modes
 	int selectionMode = 0; //is selection mode activated
 	int selectionModes = 3; //is selection mode activated
+	boolean liveMode = false;
 	double epsilon = 1e-30;
 	LinkedList<Vertex<Point_3>> fixed_selection = new LinkedList<Vertex<Point_3>>(); //index of selected fixed vertex
 	LinkedList<Vertex<Point_3>> handle_selection = new LinkedList<Vertex<Point_3>>(); //index of selected handle vertex
@@ -38,6 +39,7 @@ public class MeshViewer extends PApplet {
 	//String filename="OFF/Meshes/bar2.off";
 	//String filename="OFF/Meshes/bar3.off";
 	String filename="OFF/Meshes/cactus_small.off";
+	
 	
 	public void setup() {
 		  size(800,600,P3D);
@@ -68,19 +70,30 @@ public class MeshViewer extends PApplet {
 		}
 		
 		public void keyPressed(){
+	    		LinkedList<Vertex<Point_3>> fixed = new LinkedList<Vertex<Point_3>>() ;
+	    		fixed.addAll(fixed_selection);
+	    		fixed.addAll(handle_selection);
 			int dir = 0; 
 			  switch(key) {
 			    case('r'):this.renderType=(this.renderType+1)%this.renderModes; break;
 			    case('c'):case('C'): this.selectionMode=(this.selectionMode+1)%this.selectionModes; System.out.println("Selection Mode is "+this.selectionMode); break;
+			    
+			    case('l'): case('L'): this.liveMode = !this.liveMode; break;
+			    //Zooming
+			    case('m'): case('M'): this.mesh.scaleFactor *= 0.8; break;
+			    case('p'): case('P'): this.mesh.scaleFactor *= 1.2; break;
+			    
+			    //Compute sorkine
 			    case('s'):case('S'): 
-			    		LinkedList<Vertex<Point_3>> fixed = new LinkedList<Vertex<Point_3>>() ;
-			    		fixed.addAll(fixed_selection);
-			    		fixed.addAll(handle_selection);
 			    		this.surface_modeling.add_fixed(fixed);
 			    		this.surface_modeling.ComputeSorkineUntilThreshold(epsilon);
 			    		this.surface_modeling = new Sorkine(this.mesh.polyhedron3D);
 			    		break;
+			    		
+			    	//Resets selection
 			    case('x'): case('X'): this.fixed_selection = new LinkedList<Vertex<Point_3>>();this.handle_selection = new LinkedList<Vertex<Point_3>>();break; //Resets selections
+			    
+			    //move handle
 			    case(CODED):		
 			    		switch(keyCode) {
 					    case(UP):  dir = 2; break;
@@ -93,9 +106,15 @@ public class MeshViewer extends PApplet {
 			    	case('b'): case('B'): dir = -3; break; //back
 			  }
 			  if (dir!=0) {
-				  this.g.translate(dir, handle_selection); 
+				  this.g.translate(dir, handle_selection);
+				  this.mesh.updateScaleFactor();
+				  if (this.liveMode) {
+					  this.surface_modeling.add_fixed(fixed);
+			    		  this.surface_modeling.ComputeSorkineUntilThreshold(epsilon);
+			    		  this.surface_modeling = new Sorkine(this.mesh.polyhedron3D);
+				  }
 			  }
-			  this.mesh.updateScaleFactor();
+			  
 
 		}
 		
