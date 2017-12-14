@@ -17,12 +17,13 @@ public class MeshViewer extends PApplet {
 	gui g;
 	SurfaceModeling surface_modeling;
 	
-	int renderType=2; // choice of type of rendering
+	int renderType=0; // choice of type of rendering
 	int renderModes=3; // number of rendering modes
 	int selectionMode = 0; //is selection mode activated
 	int selectionModes = 3; //is selection mode activated
 	boolean liveMode = false;
 	double epsilon = 1e-30;
+	int count = 0;
 	LinkedList<Vertex<Point_3>> fixed_selection = new LinkedList<Vertex<Point_3>>(); //index of selected fixed vertex
 	LinkedList<Vertex<Point_3>> handle_selection = new LinkedList<Vertex<Point_3>>(); //index of selected handle vertex
 	
@@ -35,10 +36,16 @@ public class MeshViewer extends PApplet {
 	//String filename="OFF/letter_a.off";
 	//String filename="OFF/star.off";
 	//String filename="OFF/tri_triceratops.off";
-	//String filename="OFF/Meshes/bar1.off";
-	//String filename="OFF/Meshes/bar2.off";
+	//String filename="OFF/Meshes/bar1.off";//Vertices are too small 
+	//String filename="OFF/Meshes/bar2.off";//Vertices are too small 
 	//String filename="OFF/Meshes/bar3.off";
-	String filename="OFF/Meshes/cactus_small.off";
+	//String filename="OFF/Meshes/cylinder_small.off";
+	//String filename="OFF/Meshes/square_21.off";
+	//String filename="OFF/Meshes/square_21_spikes.off"; //pb scale
+	//String filename="OFF/Meshes/square_21_spikes_new.off"; //pb scale
+	//String filename="OFF/Meshes/dino.off"; //too large
+	String filename="OFF/Meshes/armadillo_1k.off";
+	//String filename="OFF/Meshes/cactus_small.off";
 	
 	
 	public void setup() {
@@ -53,7 +60,7 @@ public class MeshViewer extends PApplet {
 	}
 		 
 		public void draw() {
-		  background(0);
+		  background(255);
 		  //this.lights();
 		  directionalLight(101, 204, 255, -1, 0, 0);
 		  directionalLight(51, 102, 126, 0, -1, 0);
@@ -65,8 +72,27 @@ public class MeshViewer extends PApplet {
 		  translate(width/2.f,height/2.f,-1*height/2.f);
 		  this.strokeWeight(1);
 		  stroke(150,150,150);
+		  this.drawOptions();
 		  
 		  this.mesh.draw(renderType, fixed_selection, handle_selection);
+		}
+		public void drawOptions() {
+			int hf = 13;
+			fill(0);
+			this.textMode(this.SCREEN);
+			this.text("'r' for rendering modes", 10, hf);
+			this.text("'c' for selection modes: fixed and handle", 10, 2*hf);
+			
+			this.text("'L' for live mode", 10, 4*hf);
+			this.text("'s' for Surface Modeling", 10, 5*hf);
+			this.text("'m'/'p' for (de)zooming", 10, 6*hf);
+			this.text("arrows and 'f'/'b' to move the handle", 10, 7*hf);
+			
+			fill(255, 0, 0);
+			if (liveMode) this.text("Live Mode is on", 10, 9*hf);
+			if (selectionMode==1) this.text("Selecting fixed points", 10, 10*hf);
+			else if (selectionMode==2) this.text("Selecting handle points", 10, 10*hf);
+			
 		}
 		
 		public void keyPressed(){
@@ -75,13 +101,13 @@ public class MeshViewer extends PApplet {
 	    		fixed.addAll(handle_selection);
 			int dir = 0; 
 			  switch(key) {
-			    case('r'):this.renderType=(this.renderType+1)%this.renderModes; break;
-			    case('c'):case('C'): this.selectionMode=(this.selectionMode+1)%this.selectionModes; System.out.println("Selection Mode is "+this.selectionMode); break;
+			    case('r'): this.renderType=(this.renderType+1)%this.renderModes; break;
+			    case('c'): case('C'): this.selectionMode=(this.selectionMode+1)%this.selectionModes; System.out.println("Selection Mode is "+this.selectionMode); break;
 			    
-			    case('l'): case('L'): this.liveMode = !this.liveMode; break;
+			    case('l'): case('L'): this.liveMode = !this.liveMode;break;
 			    //Zooming
-			    case('m'): case('M'): this.mesh.scaleFactor *= 0.8; break;
-			    case('p'): case('P'): this.mesh.scaleFactor *= 1.2; break;
+			    case('m'): case('M'): this.mesh.scaleFactor *= 0.5; break;
+			    case('p'): case('P'): this.mesh.scaleFactor *= 2; break;
 			    
 			    //Compute sorkine
 			    case('s'):case('S'): 
@@ -90,10 +116,25 @@ public class MeshViewer extends PApplet {
 			    		this.surface_modeling = new Sorkine(this.mesh.polyhedron3D);
 			    		break;
 			    		
+			    	//Iteration by iteration
+			    case('i'):case('I'): 
+			    		if (count==0){
+			    			this.surface_modeling.add_fixed(fixed);
+			    			this.surface_modeling.startSorkine();
+			    		}
+		    			this.surface_modeling.ComputeSorkineIteration(count);
+		    			count++;
+		    		break;
+		    		
+			    case('e'):case('E'): 
+		    			this.surface_modeling.endSorkine(count);
+			    		this.surface_modeling = new Sorkine(this.mesh.polyhedron3D);
+		    		break;
+			    		
 			    	//Resets selection
 			    case('x'): case('X'): this.fixed_selection = new LinkedList<Vertex<Point_3>>();this.handle_selection = new LinkedList<Vertex<Point_3>>();break; //Resets selections
 			    
-			    //move handle
+			    //Moves handle
 			    case(CODED):		
 			    		switch(keyCode) {
 					    case(UP):  dir = 2; break;

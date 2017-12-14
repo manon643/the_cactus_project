@@ -20,6 +20,9 @@ public abstract class SurfaceModeling {
 	 * To be implemented
 	 */
 	public abstract void ComputeSorkineUntilThreshold(double epsilon);
+	public abstract double ComputeSorkineIteration(int count);
+	public abstract void startSorkine();
+	public abstract void endSorkine(int count);
 
 	public abstract void add_fixed(LinkedList<Vertex<Point_3>> fixed);
 

@@ -11,9 +11,15 @@ public class Sorkine extends SurfaceModeling {
 	
 	public HashMap<Vertex<Point_3>, Point_3> originalPoints;
 	public HashMap<Halfedge<Point_3>,Double> weights;
+	public HashMap<Halfedge<Point_3>,Double> originalLengths;
 	public HashMap<Vertex<Point_3>, Rotation_3> rotations;
 	public LinkedList<Vertex<Point_3>> fixed;
 	public Matrix invL;
+	
+	//To compute iteration by iteration
+	private double prevEnergy;
+	private PrintWriter writer;
+	
 	
 	public Sorkine(Polyhedron_3<Point_3> polyhedron){
 		super(polyhedron);
@@ -30,74 +36,98 @@ public class Sorkine extends SurfaceModeling {
 			if (!weights.containsKey(h)) {
 				double w2 = ComputeWeight2(h);
 				double w = ComputeWeight(h);
-				if (w!=w2)
+				if (Math.abs(w-w2)>0.01)
 					System.out.println(w+" != "+w2);
 				this.weights.put(h, w);
 				this.weights.put(h.opposite, w);
 			}	
 		}
-		
+		this.computeOriginalLengths();
 		this.rotations = new HashMap<Vertex<Point_3>, Rotation_3>();	
 	}
-	
+
 	public void add_fixed(LinkedList<Vertex<Point_3>> f) {
 		this.fixed = f;
 		computeInvL();
 		return;
 	}
 
-
-	public void ComputeSorkineUntilThreshold(double epsilon){
-		//this.initializePointprime();
-		double energy=0;
-		double diff=0;
-		double temp=0;
-		int count=0;
-		
-		PrintWriter pWriter = null;
+	private void computeOriginalLengths() {
+		this.originalLengths = new HashMap<Halfedge<Point_3>, Double>();
+		for (Halfedge<Point_3> h : this.P_prime.halfedges) {
+			Point_3 A = h.getVertex().getPoint();
+			Point_3 B = h.getOpposite().getVertex().getPoint();
+			originalLengths.put(h, A.distanceFrom(B).doubleValue());
+		}
+	}
+	
+	private double compareLenghts() {
+		double r = 0;
+		for (Halfedge<Point_3> h : this.P_prime.halfedges) {
+			Point_3 A = h.getVertex().getPoint();
+			Point_3 B = h.getOpposite().getVertex().getPoint();
+			double l = A.distanceFrom(B).doubleValue();
+			r+= Math.pow((l-originalLengths.get(h))/originalLengths.get(h), 2);
+		}
+		return Math.sqrt(r/this.P_prime.halfedges.size());
+	}
+	public void startSorkine() {
+		this.prevEnergy = 0;
+		this.writer = null;
 		try {
-			pWriter = new PrintWriter(new FileWriter("./Energy_graph.txt", true));
+			this.writer = new PrintWriter(new FileWriter("./Energy_graph.txt", true));
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		pWriter.println("new");
-		while (count<=10){
-			//Step 1 : compute the rotations
-			this.rotations = new HashMap<Vertex<Point_3>,Rotation_3>();
-			for (Vertex<Point_3> v: this.P_prime.vertices){
-				this.rotations.put(v, this.ComputeRotation(v));
-			}
+		writer.println("new");
+	}
+ 	public double ComputeSorkineIteration(int count){
+		//Step 1 : compute the rotations
+		this.rotations = new HashMap<Vertex<Point_3>,Rotation_3>();
+		for (Vertex<Point_3> v: this.P_prime.vertices){
+			this.rotations.put(v, this.ComputeRotation(v));
+		}
 
-			
-			//Step 2 : compute the points
-			Point_3[] pts = this.ComputePoints(fixed);
-			
-			// Step 3 : check energy and difference
-			temp = energy;
-			energy = this.LocalRigidityEnergy(pts);
-			if (count>0)
-				diff = temp-energy;
-			else 
-				diff = energy;
-			System.out.println("At iteration "+(count)+", energy is "+energy);
-			System.out.println("At iteration "+(count)+", diff is "+diff);
-			
-			pWriter.println(count +";"+ energy+";"+ diff);
+		
+		//Step 2 : compute the points
+		Point_3[] pts = this.ComputePoints(fixed);
+		
+		// Step 3 : check energy and difference
+		double temp = this.prevEnergy;
+		this.prevEnergy = this.LocalRigidityEnergy(pts);
+		double diff;
+		if (count>0)
+			diff = temp-this.prevEnergy;
+		else 
+			diff = this.prevEnergy;
+		
+		writer.println(count +";"+ this.prevEnergy+";"+ diff);
 
-			//Step 4 : move points
-			this.movePts(pts);
-			
-			/*for (Vertex<Point_3> v: this.P_prime.vertices){
-				Point_3 p = new Point_3(v.getPoint());
-				this.originalPoints.put(v, p);
-			}*/
+		System.out.println(count +";"+ this.prevEnergy+";"+ diff);
+		//Step 4 : move points
+		this.movePts(pts);
+		
+		return this.prevEnergy;
+	}
+	
+ 	public void endSorkine(int count) {
+		System.out.println("RMS is "+this.compareLenghts());
+		writer.close() ;
+		System.out.println("END : "+(count)+" iterations, energy is "+ this.prevEnergy);
+ 	}
+ 	
+ 	
+	public void ComputeSorkineUntilThreshold(double epsilon){
+		startSorkine();
+		int count = 0;
+		while (count<=20){
+			double e = ComputeSorkineIteration(count);
 			count++;
 		}
-		pWriter.close() ;
-		System.out.println("END : "+(count)+" iterations, energy is "+energy);
+		endSorkine(count);
 		
 	}
+	
 	
 	private void movePts(Point_3[] pts) {
 		for (Vertex<Point_3> v: this.P_prime.vertices) {
@@ -335,7 +365,7 @@ public class Sorkine extends SurfaceModeling {
 				double cos1 = (d1c+d2c-d0c)/(2*Math.sqrt(d1c*d2c));
 				double cot1 = cos1/Math.sqrt(1-cos1*cos1);
 				w = cot1;
-				System.out.println("boundaries here - 1");
+				//System.out.println("boundaries here - 1");
 			}
 			catch(Exception ex2) {
 				Face<Point_3> f2 = h.getOpposite().getFace(); //Checking if boundaries
@@ -346,7 +376,8 @@ public class Sorkine extends SurfaceModeling {
 			
 		}
 		
-		return (double) Math.round(w*1000d)/1000d;
+		//return (double) Math.round(w*100000d)/100000d;
+		return w;
 	}
 
 	public double ComputeWeight(Halfedge<Point_3> h){
@@ -373,17 +404,18 @@ public class Sorkine extends SurfaceModeling {
 			try {
 				Face<Point_3> f1 = h.getFace();
 				A1 = Area(f1); w = -1./4*((1./A1)*(d0c-d1c-d2c));
-				System.out.println("boundaries here - 1");
+				//System.out.println("boundaries here - 1");
 			}
 			catch(Exception ex2) {
 				Face<Point_3> f2 = h.getOpposite().getFace();
 				A2 = Area(f2); w = -1./4*((1./A2)*(d0c-d3c-d4c));
-				System.out.println("boundaries here - 2");
+				//System.out.println("boundaries here - 2");
 			}
 			
 		}
 		
-		return (double) Math.round(w*1000d)/1000d;
+		//return (double) Math.round(w*100000d)/100000d;
+		return w;
 	}
 		
 	

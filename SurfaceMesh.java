@@ -101,7 +101,7 @@ public class SurfaceMesh {
 	 * @param handle_selection 
 	 */
 	public void draw(int type, LinkedList<Vertex<Point_3>> fixed_selections, LinkedList<Vertex<Point_3>> handle_selection) {
-		//this.drawAxis();
+		this.drawAxis();
 		
 		// draw all faces
 		view.beginShape(view.TRIANGLES);
@@ -123,7 +123,7 @@ public class SurfaceMesh {
 		}
 		//view.strokeWeight(1);
 		
-		if(type==0) return; // no rendering for vertices
+		//if(type==0) return; // no rendering for vertices
 		
 		view.noStroke();
 		
@@ -136,7 +136,7 @@ public class SurfaceMesh {
 				view.fill(250f, 250f, 0f);
 				this.drawVertex(v.getPoint());
 			}
-			else {
+			else if (type==2) {
 				view.fill(0f, 0f, 250f);
 				this.drawVertex(v.getPoint());
 			}
