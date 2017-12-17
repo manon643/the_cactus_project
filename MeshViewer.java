@@ -1,5 +1,8 @@
 import processing.core.*;
 
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.LinkedList;
 
 import Jcg.geometry.*;
@@ -22,12 +25,12 @@ public class MeshViewer extends PApplet {
 	int selectionMode = 0; //is selection mode activated
 	int selectionModes = 3; //is selection mode activated
 	boolean liveMode = false;
-	double epsilon = 1e-30;
+	double epsilon = 1e-3;
 	int count = 0;
 	LinkedList<Vertex<Point_3>> fixed_selection = new LinkedList<Vertex<Point_3>>(); //index of selected fixed vertex
 	LinkedList<Vertex<Point_3>> handle_selection = new LinkedList<Vertex<Point_3>>(); //index of selected handle vertex
 	
-	//String filename="OFF/high_genus.off";
+	String filename="OFF/high_genus.off";
 	//String filename="OFF/sphere.off";
 	//String filename="OFF/cube.off";
 	//String filename="OFF/torus_33.off";
@@ -42,11 +45,12 @@ public class MeshViewer extends PApplet {
 	//String filename="OFF/Meshes/cylinder_small.off";
 	//String filename="OFF/Meshes/square_21.off";
 	//String filename="OFF/Meshes/square_21_spikes.off"; //pb scale
-	//String filename="OFF/Meshes/square_21_spikes_new.off"; //pb scale
+	//String filename="OFF/Meshes/square_21_spikes_new.off"; //fixed pb scale
 	//String filename="OFF/Meshes/dino.off"; //too large
-	String filename="OFF/Meshes/armadillo_1k.off";
+	//String filename="OFF/Meshes/armadillo_1k.off";
 	//String filename="OFF/Meshes/cactus_small.off";
 	
+	private PrintWriter writer;
 	
 	public void setup() {
 		  size(800,600,P3D);
@@ -56,6 +60,16 @@ public class MeshViewer extends PApplet {
 		  this.g = new gui(this.mesh.polyhedron3D);
 		  LinkedList<Vertex<Point_3>> fixed = new LinkedList<Vertex<Point_3>>() ;
 		  this.surface_modeling = new Sorkine(this.mesh.polyhedron3D);
+		  
+		  try {
+			this.writer = new PrintWriter(new FileWriter("./running_time.txt", true));
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		  writer.println("NEW: "+filename);
+		  writer.println(this.mesh.polyhedron3D.sizeOfVertices()+";"+this.mesh.polyhedron3D.sizeOfHalfedges()+";"+this.mesh.polyhedron3D.sizeOfFacets());
+		  
 
 	}
 		 
@@ -83,13 +97,13 @@ public class MeshViewer extends PApplet {
 			this.text("'r' for rendering modes", 10, hf);
 			this.text("'c' for selection modes: fixed and handle", 10, 2*hf);
 			
-			this.text("'L' for live mode", 10, 4*hf);
+			this.text("'i' to run one iteration", 10, 4*hf);
 			this.text("'s' for Surface Modeling", 10, 5*hf);
 			this.text("'m'/'p' for (de)zooming", 10, 6*hf);
 			this.text("arrows and 'f'/'b' to move the handle", 10, 7*hf);
 			
 			fill(255, 0, 0);
-			if (liveMode) this.text("Live Mode is on", 10, 9*hf);
+			if (count>0) this.text("Iteration "+count, 10, 9*hf);
 			if (selectionMode==1) this.text("Selecting fixed points", 10, 10*hf);
 			else if (selectionMode==2) this.text("Selecting handle points", 10, 10*hf);
 			
@@ -104,7 +118,6 @@ public class MeshViewer extends PApplet {
 			    case('r'): this.renderType=(this.renderType+1)%this.renderModes; break;
 			    case('c'): case('C'): this.selectionMode=(this.selectionMode+1)%this.selectionModes; System.out.println("Selection Mode is "+this.selectionMode); break;
 			    
-			    case('l'): case('L'): this.liveMode = !this.liveMode;break;
 			    //Zooming
 			    case('m'): case('M'): this.mesh.scaleFactor *= 0.5; break;
 			    case('p'): case('P'): this.mesh.scaleFactor *= 2; break;
@@ -122,13 +135,18 @@ public class MeshViewer extends PApplet {
 			    			this.surface_modeling.add_fixed(fixed);
 			    			this.surface_modeling.startSorkine();
 			    		}
+			    		long t = System.currentTimeMillis();
 		    			this.surface_modeling.ComputeSorkineIteration(count);
+		    			long d = (System.currentTimeMillis()-t);
+		    			System.out.println("Iteration "+count+" took "+d+" ms.");
+		    			writer.println(count+";"+d);
 		    			count++;
 		    		break;
 		    		
 			    case('e'):case('E'): 
 		    			this.surface_modeling.endSorkine(count);
 			    		this.surface_modeling = new Sorkine(this.mesh.polyhedron3D);
+			    		writer.close();
 		    		break;
 			    		
 			    	//Resets selection
@@ -148,12 +166,7 @@ public class MeshViewer extends PApplet {
 			  }
 			  if (dir!=0) {
 				  this.g.translate(dir, handle_selection);
-				  this.mesh.updateScaleFactor();
-				  if (this.liveMode) {
-					  this.surface_modeling.add_fixed(fixed);
-			    		  this.surface_modeling.ComputeSorkineUntilThreshold(epsilon);
-			    		  this.surface_modeling = new Sorkine(this.mesh.polyhedron3D);
-				  }
+				  //this.mesh.updateScaleFactor();
 			  }
 			  
 

@@ -34,10 +34,10 @@ public class Sorkine extends SurfaceModeling {
 		//Using wij=wji
 		for (Halfedge<Point_3> h : polyhedron.halfedges){
 			if (!weights.containsKey(h)) {
-				double w2 = ComputeWeight2(h);
+				//double w2 = ComputeWeight2(h);
 				double w = ComputeWeight(h);
-				if (Math.abs(w-w2)>0.01)
-					System.out.println(w+" != "+w2);
+				//if (Math.abs(w-w2)>0.01)
+				//	System.out.println(w+" != "+w2);
 				this.weights.put(h, w);
 				this.weights.put(h.opposite, w);
 			}	
@@ -103,11 +103,10 @@ public class Sorkine extends SurfaceModeling {
 		
 		writer.println(count +";"+ this.prevEnergy+";"+ diff);
 
-		System.out.println(count +";"+ this.prevEnergy+";"+ diff);
 		//Step 4 : move points
 		this.movePts(pts);
 		
-		return this.prevEnergy;
+		return Math.abs(diff);
 	}
 	
  	public void endSorkine(int count) {
@@ -120,12 +119,11 @@ public class Sorkine extends SurfaceModeling {
 	public void ComputeSorkineUntilThreshold(double epsilon){
 		startSorkine();
 		int count = 0;
-		while (count<=20){
-			double e = ComputeSorkineIteration(count);
+		double abs_diff = 100;
+		while (abs_diff<epsilon || count<=40){
+			abs_diff = ComputeSorkineIteration(count);
 			count++;
 		}
-		endSorkine(count);
-		
 	}
 	
 	
@@ -270,7 +268,7 @@ public class Sorkine extends SurfaceModeling {
 		
 	}
 	
-	public Rotation_3 ComputeRotation(Vertex<Point_3> vi){
+ 	public Rotation_3 ComputeRotation(Vertex<Point_3> vi){
 		Point_3 pip = vi.getPoint();
 		Point_3 pi = this.originalPoints.get(vi);
 		
@@ -305,22 +303,6 @@ public class Sorkine extends SurfaceModeling {
 		Matrix R = V.times(U.transpose());
 		
 		return (new Rotation_3(R));
-	}
-	
-	
-	/*set of vertices connected to vertex vi*/
-	
-	public static LinkedList<Vertex<Point_3>> getVoisins(Vertex<Point_3> v){
-		Halfedge<Point_3> h= v.getHalfedge();
-		
-		Halfedge<Point_3> e = h.getNext().getOpposite();
-		LinkedList<Vertex<Point_3>> voisins = new LinkedList<Vertex<Point_3>>();
-		while (e!=h){
-			voisins.addLast(e.getOpposite().getVertex());
-			e=e.getNext().getOpposite();
-		}
-		voisins.addLast(e.getOpposite().getVertex());
-		return voisins;
 	}
 
 	
